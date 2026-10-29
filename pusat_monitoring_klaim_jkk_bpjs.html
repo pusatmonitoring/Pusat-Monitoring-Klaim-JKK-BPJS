@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pusat Monitoring Klaim JKK — BPJS Ketenagakerjaan Surabaya Darmo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink:#0F2E2C;
+    --teal-950:#0B2422;
+    --teal-900:#123433;
+    --teal-800:#0F3D3E;
+    --teal-600:#1B6B67;
+    --teal-400:#4A9B93;
+    --orange:#F2994A;
+    --orange-dark:#D97A2B;
+    --paper:#F6F4EE;
+    --card:#FFFFFF;
+    --line:#E4E0D4;
+    --muted:#6B7570;
+    --jkk:#F2994A;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);}
+  .shell{display:flex;min-height:100vh;}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:236px;flex-shrink:0;background:var(--teal-950);color:#EAF3F1;
+    padding:22px 16px;position:sticky;top:0;height:100vh;overflow-y:auto;
+  }
+  .brand{padding:4px 8px 18px;border-bottom:1px solid rgba(255,255,255,0.1);margin-bottom:14px;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--orange),var(--orange-dark));
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:15px;margin-bottom:10px;
+  }
+  .brand-title{font-size:14.5px;font-weight:800;letter-spacing:.02em;}
+  .brand-sub{font-size:10.5px;color:#9FC3BE;text-transform:uppercase;letter-spacing:.12em;margin-top:2px;}
+  .nav-label{font-size:10px;color:#7FA39D;text-transform:uppercase;letter-spacing:.12em;margin:16px 10px 8px;font-weight:700;}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:9px;cursor:pointer;
+    font-size:13px;color:#CFE4E0;font-weight:600;margin-bottom:2px;transition:background .12s ease;
+  }
+  .nav-item:hover{background:rgba(255,255,255,0.06);}
+  .nav-item.active{background:rgba(242,153,74,0.16);color:#fff;}
+  .nav-num{
+    font-size:10.5px;font-weight:800;color:var(--orange);width:20px;flex-shrink:0;
+  }
+  .nav-item.active .nav-num{color:var(--orange);}
+  .sidebar-foot{margin-top:22px;padding:12px 10px;border-top:1px solid rgba(255,255,255,0.1);font-size:10.5px;color:#7FA39D;line-height:1.6;}
+
+  /* ---------- Main ---------- */
+  .main{flex:1;min-width:0;padding:26px 30px 60px;}
+  .topbar{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
+    padding-bottom:16px;margin-bottom:16px;border-bottom:2px solid var(--teal-800);flex-wrap:wrap;
+  }
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-dark);font-weight:700;margin-bottom:5px;}
+  h1{margin:0;font-size:23px;font-weight:800;color:var(--teal-950);letter-spacing:-0.01em;}
+  .sub{margin:5px 0 0;color:var(--muted);font-size:13px;max-width:560px;line-height:1.5;}
+  .topbar-right{display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
+  .status-badge{
+    display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);
+    background:#fff;border:1px solid var(--line);padding:6px 12px;border-radius:20px;
+  }
+  .status-dot{width:7px;height:7px;border-radius:50%;background:#2FAE7A;flex-shrink:0;}
+  .btn-row{display:flex;gap:8px;}
+  .btn{
+    font-size:12px;font-weight:700;padding:8px 14px;border-radius:8px;border:1.5px solid var(--teal-800);
+    background:#fff;color:var(--teal-800);cursor:pointer;transition:all .12s ease;
+  }
+  .btn:hover{background:var(--teal-800);color:#fff;}
+  .btn.primary{background:var(--teal-800);color:#fff;}
+  .btn.primary:hover{background:var(--teal-950);}
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+  /* ---------- KPIs ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px;position:relative;overflow:hidden;}
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--dot);}
+  .kpi-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;}
+  .kpi-value{font-size:20px;font-weight:800;color:var(--teal-950);margin-top:6px;letter-spacing:-0.01em;}
+  .kpi-note{font-size:11px;color:var(--muted);margin-top:3px;}
+
+  /* ---------- Panels ---------- */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:16px;}
+  .panel h2{margin:0 0 3px;font-size:15px;font-weight:700;color:var(--teal-950);}
+  .panel .desc{margin:0 0 14px;font-size:12.5px;color:var(--muted);}
+  .row2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
+  canvas{max-height:320px;}
+
+  /* ---------- Forecast bits ---------- */
+  .fc-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px;}
+  .fc-badge{flex-shrink:0;font-size:11px;font-weight:700;padding:6px 12px;border-radius:20px;white-space:nowrap;}
+  .fc-badge.strong{background:#E7F4EF;color:#1B6B67;}
+  .fc-badge.weak{background:#FDEFE2;color:#B5651D;}
+  .fc-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px;}
+  .fc-card{background:#FAFAF6;border:1px dashed var(--line);border-radius:10px;padding:13px 16px;}
+  .fc-card .fc-month{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
+  .fc-card .fc-count{font-size:18px;font-weight:800;color:var(--teal-950);margin-top:4px;}
+  .fc-card .fc-total{font-size:12px;color:var(--muted);margin-top:2px;}
+  .fc-note{font-size:12px;color:var(--muted);margin:14px 0 0;line-height:1.55;padding-top:12px;border-top:1px solid var(--line);}
+  .fc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .fc-mini{background:var(--card);border:1.5px solid var(--line);border-radius:11px;padding:14px 16px;}
+  .fc-mini .fm-head{display:flex;justify-content:space-between;align-items:center;}
+  .fc-mini .fm-prog{font-size:13px;font-weight:800;}
+  .fc-mini .fm-vals{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.7;}
+
+  /* ---------- Table ---------- */
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);cursor:pointer;user-select:none;font-weight:700;}
+  th:hover{color:var(--teal-800);}
+  th .arrow{opacity:.4;margin-left:4px;font-size:10px;}
+  tbody tr:hover{background:#FAFAF6;}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;}
+
+  /* ---------- Notes section ---------- */
+  .note-list li{margin-bottom:10px;line-height:1.6;font-size:13.5px;}
+
+  .section{display:none;}
+  .section.active{display:block;}
+
+  @media print{
+    .sidebar,.btn-row{display:none !important;}
+    .main{padding:0;}
+    .shell{display:block;}
+  }
+  @media (max-width:980px){
+    .shell{flex-direction:column;}
+    .sidebar{width:100%;height:auto;position:relative;}
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    .row2,.fc-cards,.fc-grid{grid-template-columns:1fr;}
+    .topbar{flex-direction:column;}
+    .topbar-right{align-items:flex-start;}
+  }
+
+  /* ---------- Uji hipotesis ---------- */
+  .hypo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  .hypo-card{background:var(--card);border:1.5px solid var(--line);border-radius:11px;padding:15px 17px;}
+  .hypo-card.signif{border-color:#2FAE7A;background:#F4FBF8;}
+  .hypo-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .hypo-prog{font-size:14px;font-weight:800;color:var(--teal-950);}
+  .hypo-badge{font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:20px;background:#EFEDE2;color:var(--muted);}
+  .hypo-badge.signif{background:#E7F4EF;color:#1B6B67;}
+  .hypo-stat{font-size:12px;color:var(--muted);margin:3px 0;font-family:monospace;}
+  .hypo-interp{font-size:12.5px;color:var(--ink);margin-top:8px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">RK</div>
+      <div class="brand-title">RISET KLAIM</div>
+      <div class="brand-sub">Monitoring Center</div>
+    </div>
+    <div class="nav-label">Analisis</div>
+    <div id="nav"></div>
+    <div class="sidebar-foot">
+      Program Mahasiswa Berdampak<br>Pendidikan Matematika · FMIPA UNESA<br><small style="opacity:.7">Klaim JKK</small>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="topbar">
+      <div>
+        <div class="eyebrow">Pusat Data · Surabaya Darmo</div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <p class="sub" id="pageSub">Monitoring klaim Jaminan Kecelakaan Kerja (JKK) · data aktual periode Jun 2025–Jul 2026</p>
+      </div>
+      <div class="topbar-right">
+        <div class="status-badge"><span class="status-dot"></span>Data JKK · 13.027 klaim</div>
+        <div class="btn-row">
+          <button class="btn" id="btnPrint">Cetak laporan</button>
+          <button class="btn primary" id="btnCsv">Unduh CSV</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 1. DASHBOARD -->
+    <section class="section" id="sec-dashboard">
+      <div class="kpis" id="dashKpis"></div>
+      <div class="panel">
+        <h2 id="dashTrendTitle">Tren Klaim</h2>
+        <p class="desc" id="dashTrendDesc">Jumlah klaim per bulan.</p>
+        <canvas id="dashChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 2. TREN & MUSIMAN -->
+    <section class="section" id="sec-trend">
+      <div class="panel">
+        <h2 id="trendTitle">Tren Bulanan</h2>
+        <p class="desc" id="trendDesc">Jumlah klaim (batang) dan total nominal (garis) per bulan.</p>
+        <canvas id="trendChart"></canvas>
+      </div>
+    </section>
+
+    <!-- 3. PERAMALAN -->
+    <section class="section" id="sec-forecast">
+      <div class="panel" id="forecastSingle">
+        <div class="fc-head">
+          <div>
+            <h2 id="forecastTitle">Peramalan Sederhana — 2 Bulan ke Depan</h2>
+            <p class="desc" id="forecastDesc"></p>
+          </div>
+          <div class="fc-badge" id="fcBadge"></div>
+        </div>
+        <canvas id="forecastChart"></canvas>
+        <div class="fc-cards" id="fcCards"></div>
+        <p class="fc-note" id="fcNote"></p>
+      </div>
+    </section>
+
+    <!-- 4. KANAL BANK -->
+    <section class="section" id="sec-bank">
+      <div>
+        <div class="panel">
+          <h2 id="bankTitle">Distribusi Kanal Bank</h2>
+          <p class="desc" id="bankDesc">Proporsi jumlah klaim berdasarkan bank penerima.</p>
+          <canvas id="bankChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. TABEL DATA -->
+    <section class="section" id="sec-table">
+      <div class="panel">
+        <h2 id="tableTitle">Ringkasan Bulanan</h2>
+        <p class="desc">Klik judul kolom untuk mengurutkan. Gunakan tombol "Unduh CSV" di kanan atas untuk mengekspor.</p>
+        <table id="summaryTable">
+          <thead>
+            <tr>
+              <th data-key="month">Bulan<span class="arrow"></span></th>
+              <th data-key="count">Jumlah Klaim<span class="arrow"></span></th>
+              <th data-key="total">Total Nominal (Rp)<span class="arrow"></span></th>
+              <th data-key="avg">Rata-rata / Klaim (Rp)<span class="arrow"></span></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6. CATATAN & KETERBATASAN -->
+    <section class="section" id="sec-notes">
+      <div class="panel">
+        <h2>Catatan &amp; Keterbatasan Data</h2>
+        <p class="desc">Hal-hal yang perlu diperhatikan saat membaca dashboard ini.</p>
+        <ul class="note-list">
+          <li><strong>Cakupan wilayah.</strong> Seluruh data berasal dari satu kantor cabang (Surabaya Darmo), sehingga pola yang terlihat belum tentu mewakili kantor cabang lain.</li>
+          <li><strong>Cakupan program.</strong> Dashboard ini hanya menampilkan klaim program Jaminan Kecelakaan Kerja (JKK).</li>
+          <li><strong>Tidak ada identifier individu.</strong> Data klaim tidak memuat data peserta per orang (usia, jenis kelamin, sektor pekerjaan), sehingga seluruh analisis dilakukan pada tingkat agregat bulanan, bukan tingkat individu.</li>
+          <li><strong>Rentang waktu terbatas.</strong> Data mencakup 14 bulan (Jun 2025–Jul 2026). Pola musiman baru teramati satu kali siklus, sehingga belum bisa dipastikan berulang setiap tahun tanpa data multi-tahun.</li>
+          <li><strong>Metode peramalan sederhana.</strong> Estimasi 2 bulan ke depan memakai regresi linear (bila tren kuat, R² ≥ 0,5) atau rata-rata bergerak 3 bulan (bila tren lemah). Ini adalah pendekatan statistik dasar, bukan model peramalan time-series lanjutan (mis. ARIMA), sehingga cocok untuk indikasi awal, bukan keputusan final.</li>
+          <li><strong>Nominal bersifat agregat.</strong> Total dan rata-rata nominal dihitung dari jumlah dana yang dibayarkan per transaksi, tanpa rincian potongan atau komponen manfaat.</li>
+        </ul>
+      </div>
+    </section>
+
+
+    <!-- 9. TREND PROGRAM (Uji Hipotesis) -->
+    <section class="section" id="sec-hipotesis">
+      <div class="panel">
+        <h2>Uji Hipotesis Tren per Program</h2>
+        <p class="desc">Uji Spearman terhadap urutan waktu (14 bulan) untuk mendeteksi tren naik/turun klaim JKK. H0: tidak ada tren monotonik.</p>
+        <div class="hypo-grid" id="hypoGrid"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const DATA = {"JKK": {"months": ["2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12", "2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07"], "counts": [795, 787, 887, 951, 1086, 977, 1244, 918, 959, 952, 777, 862, 865, 967], "totals": [3508178460, 2233135160, 2319653210, 2987367130, 3523965730, 2931460640, 3441737871, 3378315590, 3095771700, 2897014700, 2340234680, 2598884080, 2062463320, 2714642390], "avgs": [4412803, 2837529, 2615167, 3141290, 3244904, 3000471, 2766670, 3680082, 3228125, 3043083, 3011885, 3014947, 2384351, 2807283], "banks": [["BANK MANDIRI", 10365], ["BANK BNI", 1637], ["BANK MAYAPADA", 444], ["BANK BCA", 197], ["BANK JATIM", 177], ["CIMB NIAGA", 105]], "total_claims": 13027}};
+
+const FORECAST = {
+  "JKK": {method:"ma3", r2:0.00, fcCount:[898,898], fcTotal:[2458663263,2458663263], minCount:777, maxCount:1244},
+};
+const FORECAST_MONTHS = ["2026-08","2026-09"];
+const TRENDS = [{"program": "JKK", "rho": 0.08131868131868132, "p": 0.7822747512440957, "direction": "Naik", "decision": "Gagal menolak H0", "interpretation": "Tidak terdapat bukti statistik yang cukup untuk menyatakan adanya tren peningkatan atau penurunan jumlah klaim JKK."}];
+
+const PROGRAMS = {
+  JKK: {label:"JKK", full:"Jaminan Kecelakaan Kerja", hex:"#F2994A"},
+};
+
+const NAV = [
+  {id:"dashboard", num:"01", label:"Dashboard"},
+  {id:"trend", num:"02", label:"Tren & Musiman"},
+  {id:"forecast", num:"03", label:"Peramalan"},
+  {id:"bank", num:"04", label:"Kanal Bank"},
+  {id:"table", num:"05", label:"Tabel Data"},
+  {id:"hipotesis", num:"06", label:"Uji Hipotesis Tren"},
+  {id:"notes", num:"07", label:"Kualitas Data"},
+];
+
+let current = "JKK";
+let activeSection = "dashboard";
+let sortState = {key:"month", dir:1};
+let charts = {};
+
+const fmtIDR = (n) => "Rp " + Math.round(n).toLocaleString("id-ID");
+const fmtIDRShort = (n) => {
+  if (n >= 1e9) return "Rp " + (n/1e9).toFixed(1).replace(".0","") + " M";
+  if (n >= 1e6) return "Rp " + (n/1e6).toFixed(0) + " jt";
+  return fmtIDR(n);
+};
+const monthLabel = (ym) => {
+  const [y,m] = ym.split("-");
+  const names = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  return names[parseInt(m,10)-1] + " " + y.slice(2);
+};
+const dataFor = (key) => DATA[key];
+const destroy = (id) => { if (charts[id]) { charts[id].destroy(); delete charts[id]; } };
+
+/* ---------------- Sidebar nav ---------------- */
+function buildNav(){
+  const el = document.getElementById("nav");
+  el.innerHTML = "";
+  NAV.forEach(item=>{
+    const div = document.createElement("div");
+    div.className = "nav-item" + (item.id===activeSection ? " active" : "");
+    div.innerHTML = `<span class="nav-num">${item.num}</span>${item.label}`;
+    div.onclick = () => { activeSection = item.id; renderSection(); };
+    el.appendChild(div);
+  });
+}
+
+/* ---------------- Filter pills ---------------- */
+/* ---------------- Section 1: Dashboard ---------------- */
+function renderHipotesis(){
+  const grid = document.getElementById("hypoGrid");
+  grid.innerHTML = "";
+  TRENDS.forEach(t=>{
+    const sig = (t.p ?? 1) < 0.05;
+    const c = document.createElement("div");
+    c.className = "hypo-card" + (sig ? " signif" : "");
+    c.innerHTML = `<div class="hypo-head"><span class="hypo-prog" style="color:${PROGRAMS[t.program].hex}">${t.program} — ${PROGRAMS[t.program].full}</span>
+      <span class="hypo-badge ${sig?'signif':''}">${sig?"Signifikan":"Tidak signifikan"}</span></div>
+      <div class="hypo-stat">rho = ${t.rho.toFixed(3)} · p = ${t.p.toFixed(4)} · arah: ${t.direction}</div>
+      <div class="hypo-stat">Keputusan: ${t.decision}</div>
+      <div class="hypo-interp">${t.interpretation}</div>`;
+    grid.appendChild(c);
+  });
+}
+
+function renderDashboard(){
+  const d = dataFor(current);
+  const totalNominal = d.totals.reduce((a,b)=>a+b,0);
+  const avgAll = totalNominal / d.total_claims;
+  const maxIdx = d.counts.indexOf(Math.max(...d.counts));
+
+  const kpis = [
+    {label:"Total Klaim", value: d.total_claims.toLocaleString("id-ID"), note:"14 bulan (Jun 25–Jul 26)"},
+    {label:"Total Nominal", value: fmtIDRShort(totalNominal), note:"akumulasi periode data"},
+    {label:"Rata-rata / Klaim", value: fmtIDRShort(avgAll), note: PROGRAMS[current].full},
+    {label:"Bulan Puncak Volume", value: monthLabel(d.months[maxIdx]), note: d.counts[maxIdx].toLocaleString("id-ID") + " klaim"},
+  ];
+  const kEl = document.getElementById("dashKpis");
+  kEl.innerHTML = "";
+  kpis.forEach(k=>{
+    const c = document.createElement("div");
+    c.className = "kpi"; c.style.setProperty("--dot", PROGRAMS[current].hex);
+    c.innerHTML = `<div class="kpi-label">${k.label}</div><div class="kpi-value">${k.value}</div><div class="kpi-note">${k.note}</div>`;
+    kEl.appendChild(c);
+  });
+
+  destroy("dash");
+  const labels = d.months.map(monthLabel);
+  const ctx = document.getElementById("dashChart").getContext("2d");
+  {
+    charts.dash = new Chart(ctx, {
+      data:{ labels, datasets:[
+        { type:"bar", label:"Jumlah klaim", data:d.counts, backgroundColor: PROGRAMS[current].hex+"33", borderColor:PROGRAMS[current].hex, borderWidth:1.5, borderRadius:4 },
+      ]},
+      options:{ responsive:true, plugins:{legend:{display:false}}, scales:{ y:{grid:{color:"#EEEBE0"}}, x:{grid:{display:false}} } }
+    });
+    document.getElementById("dashTrendTitle").textContent = `Tren Klaim — ${PROGRAMS[current].full}`;
+    document.getElementById("dashTrendDesc").textContent = "Jumlah klaim per bulan untuk program terpilih.";
+  }
+}
+
+/* ---------------- Section 2: Tren & Musiman ---------------- */
+function renderTrend(){
+  const d = dataFor(current);
+  const labels = d.months.map(monthLabel);
+  destroy("trend");
+  const ctx = document.getElementById("trendChart").getContext("2d");
+  charts.trend = new Chart(ctx, {
+    data:{ labels, datasets:[
+      { type:"bar", label:"Jumlah klaim", data:d.counts, backgroundColor: PROGRAMS[current].hex+"33", borderColor:PROGRAMS[current].hex, borderWidth:1.5, borderRadius:4, yAxisID:"y" },
+      { type:"line", label:"Total nominal (Rp)", data:d.totals, borderColor:"#D97A2B", backgroundColor:"#D97A2B", borderWidth:2.5, pointRadius:3, tension:.3, yAxisID:"y1" },
+    ]},
+    options:{
+      responsive:true, interaction:{mode:"index", intersect:false},
+      plugins:{ legend:{position:"top", labels:{boxWidth:12, font:{size:11.5}}},
+        tooltip:{ callbacks:{ label:(ctx)=> ctx.dataset.yAxisID==="y1" ? " "+ctx.dataset.label+": "+fmtIDR(ctx.parsed.y) : " "+ctx.dataset.label+": "+ctx.parsed.y.toLocaleString("id-ID") } } },
+      scales:{
+        y:{ position:"left", title:{display:true,text:"Jumlah klaim",font:{size:11}}, grid:{color:"#EEEBE0"} },
+        y1:{ position:"right", title:{display:true,text:"Total nominal (Rp)",font:{size:11}}, grid:{drawOnChartArea:false}, ticks:{callback:(v)=>fmtIDRShort(v)} },
+        x:{ grid:{display:false} }
+      }
+    }
+  });
+  document.getElementById("trendTitle").textContent = `Tren Bulanan — ${PROGRAMS[current].full}`;
+}
+
+/* ---------------- Section 3: Peramalan ---------------- */
+function renderForecast(){
+  const single = document.getElementById("forecastSingle");
+  destroy("forecast");
+  const d = DATA[current];
+  const f = FORECAST[current];
+  const histLabels = d.months.map(monthLabel);
+  const fcLabels = FORECAST_MONTHS.map(monthLabel);
+  const allLabels = histLabels.concat(fcLabels);
+  const color = PROGRAMS[current].hex;
+  const actual = d.counts.concat([null,null]);
+  const estimate = new Array(d.counts.length-1).fill(null).concat([d.counts[d.counts.length-1]], f.fcCount);
+
+  const ctx = document.getElementById("forecastChart").getContext("2d");
+  charts.forecast = new Chart(ctx, {
+    type:"line",
+    data:{ labels:allLabels, datasets:[
+      { label:"Jumlah klaim aktual", data:actual, borderColor:color, backgroundColor:color, borderWidth:2.5, pointRadius:3, tension:.25 },
+      { label: f.method==="regresi" ? "Estimasi (regresi linear)" : "Estimasi (rata-rata 3 bulan)", data:estimate, borderColor:"#D97A2B", backgroundColor:"#D97A2B", borderWidth:2.5, borderDash:[6,4], pointRadius:4, pointStyle:"rectRot", tension:0 },
+    ]},
+    options:{ responsive:true, plugins:{ legend:{position:"top", labels:{boxWidth:12, font:{size:11.5}}} },
+      scales:{ y:{title:{display:true,text:"Jumlah klaim",font:{size:11}}, grid:{color:"#EEEBE0"}}, x:{grid:{display:false}} } }
+  });
+
+  const badge = document.getElementById("fcBadge");
+  const strong = f.r2 >= 0.5;
+  badge.className = "fc-badge " + (strong ? "strong" : "weak");
+  badge.textContent = strong ? `R² = ${f.r2.toFixed(2)} · tren kuat` : `R² = ${f.r2.toFixed(2)} · tren lemah`;
+
+  document.getElementById("forecastTitle").textContent = `Peramalan Sederhana — ${current} (2 Bulan ke Depan)`;
+  document.getElementById("forecastDesc").textContent = strong
+    ? `Pola ${current} menunjukkan tren linear yang cukup kuat, sehingga estimasi memakai regresi linear (kuadrat terkecil).`
+    : `Pola ${current} tidak menunjukkan tren linear yang signifikan, sehingga estimasi memakai rata-rata bergerak 3 bulan terakhir (MA3), dibaca sebagai kisaran — bukan angka pasti.`;
+
+  const cardsEl = document.getElementById("fcCards");
+  cardsEl.innerHTML = "";
+  FORECAST_MONTHS.forEach((m,i)=>{
+    const c = document.createElement("div");
+    c.className = "fc-card";
+    c.innerHTML = `<div class="fc-month">Estimasi ${monthLabel(m)}</div>
+      <div class="fc-count">≈ ${f.fcCount[i].toLocaleString("id-ID")} klaim</div>
+      <div class="fc-total">≈ ${fmtIDRShort(f.fcTotal[i])}</div>`;
+    cardsEl.appendChild(c);
+  });
+
+  const noteEl = document.getElementById("fcNote");
+  if (!strong){
+    noteEl.textContent = `Catatan: karena tren linear lemah, estimasi ${current} sebaiknya dibaca sebagai kisaran mendekati rata-rata historis (${f.minCount}–${f.maxCount} klaim/bulan pada 14 bulan terakhir), bukan proyeksi arah naik/turun.`;
+  } else {
+    noteEl.textContent = `Karena tren ${current} didukung data yang cukup kuat, estimasi ini dapat dijadikan acuan awal untuk perencanaan kesiapan verifikasi dan dana pencairan bulan berikutnya.`;
+  }
+}
+
+/* ---------------- Section 4: Kanal Bank ---------------- */
+function renderBank(){
+  const d = dataFor(current);
+  destroy("bank");
+
+  const bctx = document.getElementById("bankChart").getContext("2d");
+  const labels = d.banks.map(b=>b[0].replace("BANK ",""));
+  const values = d.banks.map(b=>b[1]);
+  const palette = ["#0F3D3E","#1B6B67","#4A9B93","#F2994A","#D97A2B","#8B5CF6"];
+  charts.bank = new Chart(bctx, {
+    type:"doughnut",
+    data:{ labels, datasets:[{ data:values, backgroundColor:palette, borderColor:"#fff", borderWidth:2 }] },
+    options:{ responsive:true, plugins:{ legend:{position:"right", labels:{boxWidth:11, font:{size:11}}},
+      tooltip:{ callbacks:{ label:(ctx)=>{ const total=values.reduce((a,b)=>a+b,0); const pct=(ctx.parsed/total*100).toFixed(1); return ` ${ctx.label}: ${ctx.parsed.toLocaleString("id-ID")} klaim (${pct}%)`; } } } } }
+  });
+  document.getElementById("bankTitle").textContent = `Distribusi Kanal Bank — ${PROGRAMS[current].full}`;
+  const topShare = (d.banks[0][1]/d.total_claims*100).toFixed(1);
+  document.getElementById("bankDesc").textContent = `${d.banks[0][0]} menampung ${topShare}% dari seluruh klaim ${current}.`;
+
+}
+
+/* ---------------- Section 5: Tabel Data ---------------- */
+function renderTable(){
+  const d = dataFor(current);
+  let rows = d.months.map((m,i)=>({ month:m, count:d.counts[i], total:d.totals[i], avg:d.avgs[i] }));
+  rows.sort((a,b)=>{
+    const dir = sortState.dir;
+    if (sortState.key === "month") return dir * a.month.localeCompare(b.month);
+    return dir * (a[sortState.key]-b[sortState.key]);
+  });
+  const tbody = document.querySelector("#summaryTable tbody");
+  tbody.innerHTML = "";
+  rows.forEach(r=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${monthLabel(r.month)}</td><td class="num">${r.count.toLocaleString("id-ID")}</td><td class="num">${fmtIDR(r.total)}</td><td class="num">${fmtIDR(r.avg)}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById("tableTitle").textContent = `Ringkasan Bulanan — ${PROGRAMS[current].full}`;
+  document.querySelectorAll("#summaryTable th").forEach(th=>{
+    const key = th.dataset.key;
+    th.querySelector(".arrow").textContent = sortState.key===key ? (sortState.dir===1?"▲":"▼") : "";
+  });
+}
+document.querySelectorAll("#summaryTable th").forEach(th=>{
+  th.addEventListener("click", ()=>{
+    const key = th.dataset.key;
+    if (sortState.key === key) sortState.dir *= -1; else { sortState.key = key; sortState.dir = 1; }
+    renderTable();
+  });
+});
+
+/* ---------------- CSV export ---------------- */
+function downloadCsv(){
+  const d = dataFor(current);
+  let csv = "Bulan,Jumlah Klaim,Total Nominal,Rata-rata per Klaim\n";
+  d.months.forEach((m,i)=>{ csv += `${m},${d.counts[i]},${d.totals[i]},${d.avgs[i]}\n`; });
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `ringkasan_klaim_${current}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+document.getElementById("btnCsv").addEventListener("click", downloadCsv);
+document.getElementById("btnPrint").addEventListener("click", ()=>window.print());
+
+/* ---------------- Section dispatcher ---------------- */
+const TITLES = {
+  dashboard:{title:"Dashboard", sub:"Monitoring klaim JKK · data aktual periode Jun 2025–Jul 2026"},
+  trend:{title:"Tren & Musiman", sub:"Pola bulanan jumlah klaim dan nominal JKK"},
+  forecast:{title:"Peramalan", sub:"Estimasi 2 bulan ke depan berdasarkan kekuatan tren JKK"},
+  bank:{title:"Kanal Bank", sub:"Distribusi dan konsentrasi kanal pembayaran"},
+  table:{title:"Tabel Data", sub:"Ringkasan bulanan, dapat diurutkan dan diekspor"},
+  hipotesis:{title:"Uji Hipotesis Tren", sub:"Uji Spearman tren naik/turun klaim JKK sepanjang 14 bulan"},
+  notes:{title:"Kualitas Data", sub:"Cakupan, keterbatasan, dan asumsi di balik angka-angka ini"},
+};
+
+function renderSection(){
+  buildNav();
+  document.getElementById("pageTitle").textContent = TITLES[activeSection].title;
+  document.getElementById("pageSub").textContent = TITLES[activeSection].sub;
+
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById("sec-"+activeSection).classList.add("active");
+
+  if (activeSection === "dashboard") renderDashboard();
+  else if (activeSection === "trend") renderTrend();
+  else if (activeSection === "forecast") renderForecast();
+  else if (activeSection === "bank") renderBank();
+  else if (activeSection === "table") renderTable();
+  else if (activeSection === "hipotesis") renderHipotesis();
+}
+
+renderSection();
+</script>
+</body>
+</html>
